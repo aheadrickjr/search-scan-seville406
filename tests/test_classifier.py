@@ -160,6 +160,29 @@ def test_ota_page_js_heavy_no_signal_is_cautious():
     )
     assert result.classification == "OTA page, no availability signal detected"
     assert "Unable to determine" in result.booking_status_text
+    assert result.confidence == "Medium"
+
+
+def test_ota_page_js_heavy_rendered_no_signal_is_trusted():
+    # Same JS-heavy domain/no-signal scenario, but this time the check came
+    # from a real headless-browser render (Phase 2) -- so a negative result
+    # can actually be trusted instead of hedged.
+    result = classify(
+        normalized_url="https://airbnb.com/rooms/12345",
+        title="Seville 406",
+        snippet="South Padre Island condo",
+        domains=DOMAINS,
+        url_check=_check(
+            final_url="https://airbnb.com/rooms/12345",
+            redirect_chain=["https://airbnb.com/rooms/12345"],
+            page_text="Beachfront condo, 2BR/2BA. Fully rendered content, no booking widget found.",
+            rendered=True,
+            screenshot_path="1/airbnb.com__rooms_12345.png",
+        ),
+    )
+    assert result.classification == "OTA page, no availability signal detected"
+    assert result.booking_status_text == "No booking path detected"
+    assert result.confidence == "High"
 
 
 def test_ota_blocked():

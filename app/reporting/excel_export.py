@@ -102,6 +102,8 @@ def _load_scan_dataframe(session: Session, scan_id: int) -> pd.DataFrame:
                 "Robots.txt Disallowed Content Check": (
                     check.robots_disallowed if check else None
                 ),
+                "Rendered (Browser Check)": check.rendered if check else False,
+                "Screenshot Path": check.screenshot_path if check else None,
                 "Classification": clas.classification if clas else "Unclear — manual review required",
                 "Confidence": clas.confidence if clas else "Low",
                 "Mentions Seville 406": clas.mentions_seville_406 if clas else False,
@@ -160,6 +162,8 @@ def export_scan_to_excel(session: Session, scan_id: int, output_path: Path) -> P
         "Accessible",
         "Checked At (UTC)",
         "Robots.txt Disallowed Content Check",
+        "Rendered (Browser Check)",
+        "Screenshot Path",
         "Classification",
     ]
     link_validation_df = df[link_validation_columns] if not df.empty else df
@@ -193,6 +197,10 @@ def export_scan_to_excel(session: Session, scan_id: int, output_path: Path) -> P
         ),
         ("Franke Rentals listings found", len(franke_df)),
         ("Flagged for manual review", len(manual_review_df)),
+        (
+            "Results checked via real browser render (screenshots available)",
+            int(df["Rendered (Browser Check)"].sum()) if not df.empty else 0,
+        ),
     ]
     summary_df = pd.DataFrame(summary_rows, columns=["Metric", "Value"])
 

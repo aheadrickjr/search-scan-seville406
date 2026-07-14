@@ -32,6 +32,9 @@ Write-Host "Installing/updating dependencies..."
 & $VenvPython -m pip install --upgrade pip | Out-Null
 & $VenvPython -m pip install -r requirements.txt
 
+Write-Host "Ensuring Playwright's Chromium browser is installed (one-time ~300MB download on first run)..."
+& $VenvPython -m playwright install chromium
+
 $EnvFile = Join-Path $RepoRoot ".env"
 $EnvExample = Join-Path $RepoRoot ".env.example"
 if (-not (Test-Path $EnvFile)) {

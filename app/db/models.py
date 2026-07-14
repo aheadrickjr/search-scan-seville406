@@ -115,6 +115,8 @@ class UrlCheck(Base):
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     robots_disallowed: Mapped[bool] = mapped_column(Boolean, default=False)
     page_text_checked: Mapped[bool] = mapped_column(Boolean, default=False)
+    rendered: Mapped[bool] = mapped_column(Boolean, default=False)
+    screenshot_path: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     scan: Mapped["Scan"] = relationship(back_populates="url_checks")
 

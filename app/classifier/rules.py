@@ -79,16 +79,16 @@ def _combined_text(title: str, snippet: str, page_text: str, hidden_metadata_tex
 
 
 def _booking_status_text(
-    *, booking_language_detected: bool, domain: str, page_text_checked: bool
+    *, booking_language_detected: bool, domain: str, page_text_checked: bool, rendered: bool
 ) -> str:
     if booking_language_detected:
         return "Booking controls detected"
     if not page_text_checked:
         return "Unable to determine (content check skipped per robots.txt)"
-    if domain in JS_HEAVY_DOMAINS:
+    if domain in JS_HEAVY_DOMAINS and not rendered:
         return (
             "Unable to determine (page likely requires JavaScript rendering; "
-            "not evaluated in Phase 1)"
+            "not evaluated -- ran an HTTP-only check, not a browser render)"
         )
     return "No booking path detected"
 
@@ -129,6 +129,7 @@ def classify(
         booking_language_detected=booking_language_detected,
         domain=domain,
         page_text_checked=url_check.page_text_checked,
+        rendered=url_check.rendered,
     )
 
     is_blocked = url_check.status_code in BLOCK_STATUS_CODES
@@ -209,7 +210,12 @@ def classify(
             notes = "Booking controls detected but manager attribution could not be confirmed from page text."
         else:
             classification = "OTA page, no availability signal detected"
-            confidence = "Medium" if url_check.page_text_checked else "Low"
+            if url_check.rendered and url_check.page_text_checked:
+                confidence = "High"
+            elif url_check.page_text_checked:
+                confidence = "Medium"
+            else:
+                confidence = "Low"
             manual_review_flag = not url_check.page_text_checked
 
     # 4. Anything else.

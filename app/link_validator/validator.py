@@ -29,6 +29,12 @@ class UrlCheckResult:
     # copy was updated, which is exactly the kind of stale attribution this
     # tool exists to catch.
     hidden_metadata_text: str = field(default="")
+    # True when this check came from a real headless-browser render
+    # (Phase 2, BrowserValidator) rather than a plain HTTP GET. Lets the
+    # classifier stop hedging with "may require JavaScript rendering" once
+    # we've actually executed the page's JS and can trust a negative result.
+    rendered: bool = field(default=False)
+    screenshot_path: str | None = field(default=None)
 
 
 _METADATA_META_NAMES = {
@@ -41,7 +47,7 @@ _METADATA_META_NAMES = {
 }
 
 
-def _extract_hidden_metadata_text(soup: BeautifulSoup) -> str:
+def extract_hidden_metadata_text(soup: BeautifulSoup) -> str:
     parts: list[str] = []
 
     title_tag = soup.find("title")
@@ -72,7 +78,7 @@ def _extract_page_text(response: requests.Response) -> tuple[str, str]:
     if "html" not in content_type.lower():
         return "", ""
     soup = BeautifulSoup(response.text, "html.parser")
-    hidden_metadata_text = _extract_hidden_metadata_text(soup)
+    hidden_metadata_text = extract_hidden_metadata_text(soup)
     for tag in soup(["script", "style", "noscript"]):
         tag.decompose()
     visible_text = soup.get_text(separator=" ", strip=True)

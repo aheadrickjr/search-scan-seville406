@@ -19,6 +19,8 @@ class Settings(BaseModel):
     search_results_per_query: int = Field(default=20)
     queries_path: Path = Field(default=REPO_ROOT / "config" / "queries.yaml")
     domains_path: Path = Field(default=REPO_ROOT / "config" / "domains.yaml")
+    screenshots_dir: Path = Field(default=REPO_ROOT / "screenshots")
+    browser_timeout_seconds: float = Field(default=20.0)
 
     @property
     def user_agent(self) -> str:
@@ -46,4 +48,5 @@ def load_settings(env_file: Path | None = None) -> Settings:
             os.getenv("LINK_VALIDATOR_TIMEOUT_SECONDS", "15")
         ),
         search_results_per_query=int(os.getenv("SEARCH_RESULTS_PER_QUERY", "20")),
+        browser_timeout_seconds=float(os.getenv("BROWSER_TIMEOUT_SECONDS", "20")),
     )

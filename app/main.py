@@ -14,13 +14,13 @@ from pathlib import Path
 
 from sqlalchemy import select
 
+from app.browser_validator.validator import BrowserValidator
 from app.classifier.rules import ClassificationResult, classify, mark_duplicates
 from app.config.loader import load_domains, load_queries
 from app.config.settings import REPO_ROOT, load_settings
 from app.db.models import Classification, Scan, ScanQuery, SearchResult, UrlCheck
 from app.db.session import make_session_factory
 from app.link_validator.robots import RobotsCache
-from app.link_validator.validator import LinkValidator
 from app.reporting.excel_export import export_scan_to_excel
 from app.search_provider.brave import BraveSearchProvider, SearchProviderError
 from app.url_utils.normalize import extract_domain, normalize_url
@@ -37,11 +37,12 @@ def run_scan(settings) -> int:
         timeout_seconds=settings.link_validator_timeout_seconds,
     )
     robots_cache = RobotsCache(user_agent=settings.user_agent)
-    validator = LinkValidator(
+    validator = BrowserValidator(
         user_agent=settings.user_agent,
         robots_cache=robots_cache,
+        screenshots_dir=settings.screenshots_dir,
         min_seconds_between_requests=settings.link_validator_rate_limit_seconds,
-        timeout_seconds=settings.link_validator_timeout_seconds,
+        timeout_seconds=settings.browser_timeout_seconds,
     )
 
     session_factory = make_session_factory(settings.database_path)
@@ -101,29 +102,33 @@ def run_scan(settings) -> int:
         print(f"Collected {len(url_meta)} unique URLs across {len(queries)} queries.")
 
         classifications_by_url: dict[str, ClassificationResult] = {}
-        for normalized_url, meta in url_meta.items():
-            check_result = validator.check(normalized_url)
-            session.add(
-                UrlCheck(
-                    scan_id=scan.id,
-                    normalized_url=normalized_url,
-                    status_code=check_result.status_code,
-                    redirect_chain_json=json.dumps(check_result.redirect_chain),
-                    final_url=check_result.final_url,
-                    response_time_ms=check_result.response_time_ms,
-                    accessible=check_result.accessible,
-                    error_message=check_result.error_message,
-                    robots_disallowed=check_result.robots_disallowed,
-                    page_text_checked=check_result.page_text_checked,
+        with validator:
+            for i, (normalized_url, meta) in enumerate(url_meta.items(), start=1):
+                print(f"  [{i}/{len(url_meta)}] checking {normalized_url}", file=sys.stderr)
+                check_result = validator.check(normalized_url, scan.id)
+                session.add(
+                    UrlCheck(
+                        scan_id=scan.id,
+                        normalized_url=normalized_url,
+                        status_code=check_result.status_code,
+                        redirect_chain_json=json.dumps(check_result.redirect_chain),
+                        final_url=check_result.final_url,
+                        response_time_ms=check_result.response_time_ms,
+                        accessible=check_result.accessible,
+                        error_message=check_result.error_message,
+                        robots_disallowed=check_result.robots_disallowed,
+                        page_text_checked=check_result.page_text_checked,
+                        rendered=check_result.rendered,
+                        screenshot_path=check_result.screenshot_path,
+                    )
                 )
-            )
-            classifications_by_url[normalized_url] = classify(
-                normalized_url=normalized_url,
-                title=meta["title"] or "",
-                snippet=meta["snippet"] or "",
-                domains=domains,
-                url_check=check_result,
-            )
+                classifications_by_url[normalized_url] = classify(
+                    normalized_url=normalized_url,
+                    title=meta["title"] or "",
+                    snippet=meta["snippet"] or "",
+                    domains=domains,
+                    url_check=check_result,
+                )
 
         dupe_rows = [
             (url, meta["domain"], meta["title"] or "", meta["position"])

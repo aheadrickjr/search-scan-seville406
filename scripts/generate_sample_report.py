@@ -196,6 +196,10 @@ def main() -> None:
                 domain=url.split("/")[2] if "//" in url else url,
             )
         )
+        domain = url.split("/")[2] if "//" in url else url
+        screenshot_path = (
+            f"{scan.id}/{domain}__sample.png" if page_text_checked else None
+        )
         session.add(
             UrlCheck(
                 scan_id=scan.id,
@@ -208,6 +212,8 @@ def main() -> None:
                 error_message=None if accessible else f"HTTP {status_code}",
                 robots_disallowed=robots_disallowed,
                 page_text_checked=page_text_checked,
+                rendered=page_text_checked,
+                screenshot_path=screenshot_path,
             )
         )
         session.add(

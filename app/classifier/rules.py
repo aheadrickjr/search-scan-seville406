@@ -16,7 +16,7 @@ from urllib.parse import urlsplit
 
 from app.config.loader import DomainConfig
 from app.link_validator.validator import UrlCheckResult
-from app.url_utils.normalize import extract_domain
+from app.url_utils.normalize import extract_domain, normalize_url
 
 # Status codes that typically indicate a bot-block / access denial rather
 # than a genuinely dead page. Treated as "Blocked or inaccessible", never
@@ -136,10 +136,14 @@ def classify(
     final_domain = (
         extract_domain(url_check.final_url) if url_check.final_url else domain
     )
+    # Compare normalized forms, not raw strings -- a site's own trailing-slash
+    # or query-param canonicalization (e.g. "/sv406" -> "/sv406/") produces a
+    # genuine HTTP redirect to what is otherwise the *same* page, and must
+    # not be treated as "redirected to different content."
     redirected = bool(
         url_check.final_url
         and len(url_check.redirect_chain) > 1
-        and url_check.final_url != normalized_url
+        and normalize_url(url_check.final_url) != normalized_url
     )
 
     notes = ""

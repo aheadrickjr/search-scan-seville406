@@ -97,6 +97,31 @@ def test_pir_redirect_to_generic_inventory():
     assert result.classification == "Redirect to PIR inventory"
 
 
+def test_pir_trailing_slash_canonicalization_is_not_a_redirect():
+    # Regression test: a site's own trailing-slash canonicalization (e.g.
+    # "/rental/sv406" -> "/rental/sv406/") produces a real HTTP redirect to
+    # what is otherwise the identical page. This must NOT be classified as
+    # "redirected to different content" -- it's still the live page.
+    result = classify(
+        normalized_url="https://pirentals.com/vacation-rentals/rental/sv406",
+        title="Seville 406 | Padre Island Rentals",
+        snippet="Book Seville 406 with Padre Island Rentals",
+        domains=DOMAINS,
+        url_check=_check(
+            final_url="https://pirentals.com/vacation-rentals/rental/sv406/",
+            redirect_chain=[
+                "https://pirentals.com/vacation-rentals/rental/sv406",
+                "https://pirentals.com/vacation-rentals/rental/sv406/",
+            ],
+        ),
+    )
+    assert result.classification == "Active PIR listing"
+    assert result.classification not in {
+        "Redirect to PIR inventory",
+        "Redirect to unrelated property",
+    }
+
+
 def test_pir_redirect_to_unrelated_property():
     result = classify(
         normalized_url="https://pirentals.com/seville-406",

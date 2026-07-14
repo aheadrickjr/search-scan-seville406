@@ -20,6 +20,7 @@ def _check(**overrides) -> UrlCheckResult:
         robots_disallowed=False,
         page_text_checked=True,
         page_text="",
+        hidden_metadata_text="",
     )
     base.update(overrides)
     return UrlCheckResult(**base)
@@ -220,6 +221,45 @@ def test_unknown_domain_unclear():
         ),
     )
     assert result.classification == "Unclear — manual review required"
+
+
+def test_hidden_metadata_only_mention_is_flagged():
+    result = classify(
+        normalized_url="https://expedia.com/hotel/seville-406",
+        title="Beachfront Condo",
+        snippet="South Padre Island rental",
+        domains=DOMAINS,
+        url_check=_check(
+            final_url="https://expedia.com/hotel/seville-406",
+            redirect_chain=["https://expedia.com/hotel/seville-406"],
+            page_text="Beachfront condo, 2BR/2BA. Great views.",
+            hidden_metadata_text=(
+                '<title>Seville 406 | Padre Island Rentals</title> '
+                '{"name": "Seville 406", "provider": "Padre Island Rentals"}'
+            ),
+        ),
+    )
+    assert result.mentions_only_in_hidden_metadata is True
+    assert result.mentions_seville_406 is True
+    assert result.mentions_pir is True
+    assert result.manual_review_flag is True
+    assert "hidden" in result.notes.lower() or "metadata" in result.notes.lower()
+
+
+def test_visible_mention_is_not_flagged_as_hidden_only():
+    result = classify(
+        normalized_url="https://expedia.com/hotel/seville-406",
+        title="Seville 406",
+        snippet="Managed by Padre Island Rentals",
+        domains=DOMAINS,
+        url_check=_check(
+            final_url="https://expedia.com/hotel/seville-406",
+            redirect_chain=["https://expedia.com/hotel/seville-406"],
+            page_text="Seville 406, managed by Padre Island Rentals.",
+            hidden_metadata_text="<title>Seville 406 | Padre Island Rentals</title>",
+        ),
+    )
+    assert result.mentions_only_in_hidden_metadata is False
 
 
 def test_mark_duplicates_preserves_original_fields_on_lower_ranked_copy():

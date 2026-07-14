@@ -99,6 +99,14 @@ python scripts/generate_sample_report.py   # mock-data sample report (no network
 Each scan writes to `data/scans.db` (SQLite) and exports an Excel workbook
 to `reports/evidence_register_scan_<id>.xlsx`.
 
+> **Note on schema changes:** there's no migration tool in Phase 1 (by
+> design -- see recommended stack). If you pull an update that adds a new
+> database column (as this project has already done once), your existing
+> `data/scans.db` won't have it and inserts will fail with a "no such
+> column" error. Delete `data/scans.db` and re-run a scan to get a fresh
+> schema -- your past scans' exported `.xlsx` files in `reports/` aren't
+> affected, only the database's own history.
+
 ## Configuration
 
 Edit these without touching code:
@@ -146,6 +154,20 @@ no AI/LLM involved in Phase 1.
 Booking status always uses cautious language: *"Booking controls
 detected," "No booking path detected," "Unable to determine (...)"* --
 never a flat assertion that a listing is or isn't bookable.
+
+### Hidden-metadata detection
+
+Beyond the visible page text, the link validator also reads `<title>`,
+`<meta name="description"/"keywords">`, Open Graph/Twitter Card tags,
+`<script type="application/ld+json">` structured data, and image `alt`
+text -- none of which a site visitor sees, but all of which search engines
+and OTA platforms index directly. When a Seville 406/PIR reference shows up
+in that metadata but *not* in the visible page copy, the result is flagged
+**"Mentions Only In Hidden Metadata"** with a note explaining the
+implication: the visible page was likely updated, but the underlying page
+metadata wasn't, which is a concrete, documentable reason stale
+attribution keeps resurfacing in search results even after a listing looks
+"cleaned up" to a human visitor.
 
 ## Current limitations (read before relying on this for anything)
 

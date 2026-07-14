@@ -137,6 +137,9 @@ class Classification(Base):
     mentions_seville_406: Mapped[bool] = mapped_column(Boolean, default=False)
     mentions_pir: Mapped[bool] = mapped_column(Boolean, default=False)
     mentions_franke: Mapped[bool] = mapped_column(Boolean, default=False)
+    mentions_only_in_hidden_metadata: Mapped[bool] = mapped_column(
+        Boolean, default=False
+    )
     booking_language_detected: Mapped[bool] = mapped_column(Boolean, default=False)
     booking_status_text: Mapped[str] = mapped_column(String(100))
     manual_review_flag: Mapped[bool] = mapped_column(Boolean, default=False)

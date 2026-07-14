@@ -65,14 +65,17 @@ class ClassificationResult:
     mentions_seville_406: bool
     mentions_pir: bool
     mentions_franke: bool
+    mentions_only_in_hidden_metadata: bool
     booking_language_detected: bool
     booking_status_text: str
     manual_review_flag: bool
     notes: str
 
 
-def _combined_text(title: str, snippet: str, page_text: str) -> str:
-    return " ".join(part for part in (title, snippet, page_text) if part)
+def _combined_text(title: str, snippet: str, page_text: str, hidden_metadata_text: str) -> str:
+    return " ".join(
+        part for part in (title, snippet, page_text, hidden_metadata_text) if part
+    )
 
 
 def _booking_status_text(
@@ -99,11 +102,26 @@ def classify(
     url_check: UrlCheckResult,
 ) -> ClassificationResult:
     domain = extract_domain(normalized_url)
-    text = _combined_text(title, snippet, url_check.page_text)
+    visible_text = _combined_text(title, snippet, url_check.page_text, "")
+    full_text = _combined_text(
+        title, snippet, url_check.page_text, url_check.hidden_metadata_text
+    )
 
-    mentions_seville_406 = bool(_SEVILLE_406_RE.search(text))
-    mentions_pir = bool(_PIR_RE.search(text))
-    mentions_franke = bool(_FRANKE_RE.search(text))
+    mentions_seville_406 = bool(_SEVILLE_406_RE.search(full_text))
+    mentions_pir = bool(_PIR_RE.search(full_text))
+    mentions_franke = bool(_FRANKE_RE.search(full_text))
+
+    # True when a manager-name/property reference exists in machine-readable
+    # metadata (title/meta tags/JSON-LD/alt text) that a site owner's cleanup
+    # pass -- which typically only touches visible page copy -- would miss.
+    # Search engines and OTAs index this metadata directly, so it's a
+    # concrete, documentable reason stale attribution persists.
+    mentions_only_in_hidden_metadata = bool(
+        (_SEVILLE_406_RE.search(url_check.hidden_metadata_text)
+         or _PIR_RE.search(url_check.hidden_metadata_text))
+        and not (_SEVILLE_406_RE.search(visible_text) or _PIR_RE.search(visible_text))
+    )
+
     booking_language_detected = url_check.page_text_checked and any(
         phrase in url_check.page_text.lower() for phrase in _BOOKING_PHRASES
     )
@@ -223,12 +241,24 @@ def classify(
             confidence = "Low"
             manual_review_flag = True
 
+    if mentions_only_in_hidden_metadata:
+        hidden_note = (
+            "Seville 406/PIR reference found only in page metadata (title, meta "
+            "tags, structured data, or image alt text) -- not in the visible "
+            "page text. This suggests the visible copy was updated but the "
+            "underlying page metadata was not, which is a plausible reason "
+            "search engines/OTAs keep resurfacing this association."
+        )
+        notes = f"{notes} {hidden_note}".strip()
+        manual_review_flag = True
+
     return ClassificationResult(
         classification=classification,
         confidence=confidence,
         mentions_seville_406=mentions_seville_406,
         mentions_pir=mentions_pir,
         mentions_franke=mentions_franke,
+        mentions_only_in_hidden_metadata=mentions_only_in_hidden_metadata,
         booking_language_detected=booking_language_detected,
         booking_status_text=booking_status_text,
         manual_review_flag=manual_review_flag,
@@ -268,6 +298,7 @@ def mark_duplicates(
                 mentions_seville_406=original.mentions_seville_406,
                 mentions_pir=original.mentions_pir,
                 mentions_franke=original.mentions_franke,
+                mentions_only_in_hidden_metadata=original.mentions_only_in_hidden_metadata,
                 booking_language_detected=original.booking_language_detected,
                 booking_status_text=original.booking_status_text,
                 manual_review_flag=original.manual_review_flag,

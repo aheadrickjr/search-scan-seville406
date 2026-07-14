@@ -22,16 +22,61 @@ class UrlCheckResult:
     robots_disallowed: bool
     page_text_checked: bool
     page_text: str = field(default="")
+    # Text from <title>, <meta description/keywords/og:*/twitter:*>, JSON-LD
+    # structured data, and image alt attributes. Search engines and OTA
+    # platforms index this even when it's never rendered for a human visitor
+    # -- a manager-name reference can survive here after the visible page
+    # copy was updated, which is exactly the kind of stale attribution this
+    # tool exists to catch.
+    hidden_metadata_text: str = field(default="")
 
 
-def _extract_visible_text(response: requests.Response) -> str:
+_METADATA_META_NAMES = {
+    "description",
+    "keywords",
+    "og:title",
+    "og:description",
+    "twitter:title",
+    "twitter:description",
+}
+
+
+def _extract_hidden_metadata_text(soup: BeautifulSoup) -> str:
+    parts: list[str] = []
+
+    title_tag = soup.find("title")
+    if title_tag and title_tag.string:
+        parts.append(title_tag.get_text(strip=True))
+
+    for meta in soup.find_all("meta"):
+        key = (meta.get("name") or meta.get("property") or "").lower()
+        content = meta.get("content")
+        if key in _METADATA_META_NAMES and content:
+            parts.append(content)
+
+    for img in soup.find_all("img"):
+        alt = img.get("alt")
+        if alt:
+            parts.append(alt)
+
+    for script in soup.find_all("script", type="application/ld+json"):
+        if script.string:
+            parts.append(script.string)
+
+    return " ".join(parts)
+
+
+def _extract_page_text(response: requests.Response) -> tuple[str, str]:
+    """Returns (visible_text, hidden_metadata_text)."""
     content_type = response.headers.get("Content-Type", "")
     if "html" not in content_type.lower():
-        return ""
+        return "", ""
     soup = BeautifulSoup(response.text, "html.parser")
+    hidden_metadata_text = _extract_hidden_metadata_text(soup)
     for tag in soup(["script", "style", "noscript"]):
         tag.decompose()
-    return soup.get_text(separator=" ", strip=True)
+    visible_text = soup.get_text(separator=" ", strip=True)
+    return visible_text, hidden_metadata_text
 
 
 class LinkValidator:
@@ -68,7 +113,7 @@ class LinkValidator:
                 response = requests.get(
                     url, headers=headers, timeout=self._timeout, allow_redirects=True
                 )
-                page_text = _extract_visible_text(response)
+                page_text, hidden_metadata_text = _extract_page_text(response)
                 page_text_checked = True
             else:
                 # robots.txt disallows this path for our user-agent: confirm
@@ -92,6 +137,7 @@ class LinkValidator:
                     )
                     response.close()
                 page_text = ""
+                hidden_metadata_text = ""
                 page_text_checked = False
         except requests.RequestException as exc:
             return UrlCheckResult(
@@ -104,6 +150,7 @@ class LinkValidator:
                 robots_disallowed=not content_allowed,
                 page_text_checked=False,
                 page_text="",
+                hidden_metadata_text="",
             )
         finally:
             self._last_request_at[domain] = time.monotonic()
@@ -121,4 +168,5 @@ class LinkValidator:
             robots_disallowed=not content_allowed,
             page_text_checked=page_text_checked,
             page_text=page_text,
+            hidden_metadata_text=hidden_metadata_text,
         )

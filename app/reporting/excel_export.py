@@ -107,6 +107,9 @@ def _load_scan_dataframe(session: Session, scan_id: int) -> pd.DataFrame:
                 "Mentions Seville 406": clas.mentions_seville_406 if clas else False,
                 "Mentions PIR": clas.mentions_pir if clas else False,
                 "Mentions Franke": clas.mentions_franke if clas else False,
+                "Mentions Only In Hidden Metadata": (
+                    clas.mentions_only_in_hidden_metadata if clas else False
+                ),
                 "Booking Language Detected": (
                     clas.booking_language_detected if clas else False
                 ),

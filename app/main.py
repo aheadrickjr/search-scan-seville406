@@ -141,6 +141,7 @@ def run_scan(settings) -> int:
                     mentions_seville_406=clas.mentions_seville_406,
                     mentions_pir=clas.mentions_pir,
                     mentions_franke=clas.mentions_franke,
+                    mentions_only_in_hidden_metadata=clas.mentions_only_in_hidden_metadata,
                     booking_language_detected=clas.booking_language_detected,
                     booking_status_text=clas.booking_status_text,
                     manual_review_flag=clas.manual_review_flag,

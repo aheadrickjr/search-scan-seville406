@@ -1,0 +1,23 @@
+# Search queries run every scan.
+# Add/edit/remove entries here -- no code changes needed.
+# Each entry is passed to the search provider as-is, including "site:" operators
+# and quoted phrases.
+
+queries:
+  - '"Seville 406" "Padre Island Rentals"'
+  - '"Seville Unit 406" "Padre Island Rentals"'
+  - '"Seville 406 by Padre Island Rentals"'
+  - '"Seville 406" PIR'
+  - '"Seville 406" "South Padre Island"'
+  - '"Seville 406" rental'
+  - '"Seville 406" condo'
+  - 'site:pirentals.com "Seville 406"'
+  - 'site:expedia.com "Seville 406"'
+  - 'site:hotels.com "Seville 406"'
+  - 'site:vrbo.com "Seville 406"'
+  - 'site:travelocity.com "Seville 406"'
+  - 'site:rentbyowner.com "Seville 406"'
+  - 'site:vacationrenter.com "Seville 406"'
+  - 'site:booking.com "Seville 406"'
+  - 'site:airbnb.com "Seville 406"'
+  - 'site:frankerentals.com "Seville 406"'

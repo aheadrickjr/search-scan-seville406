@@ -1,0 +1,22 @@
+# Domain classification lists used by the rule-based classifier.
+# Add subdomains/aliases as you discover them. Matching is done against the
+# registrable domain (e.g. "www.pirentals.com" matches "pirentals.com").
+
+# Domains owned/operated by the former manager (Padre Island Rentals).
+pir_domains:
+  - pirentals.com
+
+# Domains owned/operated by the current manager (Franke Rentals).
+franke_domains:
+  - frankerentals.com
+
+# Third-party OTA / listing-aggregator domains of interest.
+ota_domains:
+  - expedia.com
+  - hotels.com
+  - vrbo.com
+  - travelocity.com
+  - rentbyowner.com
+  - vacationrenter.com
+  - booking.com
+  - airbnb.com

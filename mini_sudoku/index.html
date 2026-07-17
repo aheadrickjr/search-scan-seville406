@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini Sudoku</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <button id="back-btn" class="icon-btn" title="New puzzle" aria-label="New puzzle">&#8592;</button>
+    <h1>Mini Sudoku</h1>
+    <button id="help-btn" class="icon-btn" title="How to play" aria-label="How to play">?</button>
+  </header>
+
+  <div class="statusbar">
+    <div class="timer">&#9201; <span id="timer">0:00</span></div>
+    <div class="puzzle-id">#<span id="puzzle-id">1</span> <span id="puzzle-name">Random</span></div>
+    <button id="reset-btn" class="link-btn">Reset</button>
+  </div>
+
+  <div id="board" class="board" role="grid" aria-label="Sudoku board"></div>
+
+  <div class="toolbar">
+    <button id="hint-btn" class="tool-btn">
+      <span class="tool-icon">&#128161;</span> Hint
+    </button>
+    <button id="notes-btn" class="tool-btn">
+      <span class="tool-icon">&#9998;</span> Notes <span id="notes-state">OFF</span>
+    </button>
+  </div>
+
+  <div class="keypad" id="keypad">
+    <button class="key" data-num="1">1</button>
+    <button class="key" data-num="2">2</button>
+    <button class="key" data-num="3">3</button>
+    <button class="key erase" id="erase-btn">
+      <span class="key-icon">&#10005;</span><span class="key-label">Erase</span>
+    </button>
+    <button class="key" data-num="4">4</button>
+    <button class="key" data-num="5">5</button>
+    <button class="key" data-num="6">6</button>
+    <button class="key undo" id="undo-btn">
+      <span class="key-icon">&#8634;</span><span class="key-label">Undo</span>
+    </button>
+  </div>
+
+  <button id="results-btn" class="results-btn">See results</button>
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+    <h2 id="modal-title">You solved it!</h2>
+    <p id="modal-body">Time: <span id="modal-time"></span></p>
+    <button id="modal-close" class="modal-btn">New puzzle</button>
+  </div>
+</div>
+
+<div id="help-modal" class="modal hidden">
+  <div class="modal-card">
+    <h2>How to play</h2>
+    <p>Fill the 6&times;6 grid so that every row, every column, and every
+      2&times;3 outlined box contains the numbers 1 through 6 exactly once.</p>
+    <p>Tap a cell, then tap a number to fill it in. Use <b>Notes</b> to
+      pencil in candidates, <b>Hint</b> to reveal the correct value for the
+      selected cell, and <b>Undo</b>/<b>Erase</b> to fix mistakes.</p>
+    <button id="help-close" class="modal-btn">Got it</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
